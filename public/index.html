@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Public Toilets Map</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <style>
+            body {
+                margin: 0;
+            }
+            #map {
+                height: 100vh;
+            }
+            .user-location-marker {
+                background-color: #007bff;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                border: 2px solid white;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <script>
+            const map = L.map('map');
+
+            // Set up tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+
+            // Function to fetch and display toilets
+            function fetchToilets(lat, lon) {
+                const radius = map.getBounds().getNorthEast().distanceTo(map.getBounds().getSouthWest()) / 2;
+
+                fetch(`/api/toilets?lat=${lat}&lon=${lon}&radius=${radius}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.elements.forEach(element => {
+                            if (element.type === 'node' && element.lat && element.lon) {
+                                L.marker([element.lat, element.lon])
+                                    .addTo(map)
+                                    .bindPopup('Public Toilet');
+                            }
+                        });
+                    })
+                    .catch(error => console.error('Fetch error:', error));
+            }
+
+            // Initial setup for user location
+            let userMarker;
+            let mapCentered = false;  // Flag to ensure the map is centered only once
+
+            function onLocationFound(e) {
+                const radius = e.accuracy / 2;
+
+                if (!userMarker) {
+                    // Create a custom marker if it doesn't exist
+                    const userIcon = L.divIcon({
+                        className: 'user-location-marker',
+                    });
+
+                    userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map)
+                        .bindPopup("You are within " + radius + " meters from this point").openPopup();
+                } else {
+                    // Update the existing marker position
+                    userMarker.setLatLng(e.latlng).update();
+                }
+
+                // Center the map only on the first location update
+                if (!mapCentered) {
+                    map.setView(e.latlng, 15);
+                    mapCentered = true; // Ensure map is not centered again
+                }
+
+                // Fetch toilets around the new location
+                fetchToilets(e.latlng.lat, e.latlng.lng);
+            }
+
+            function onLocationError(e) {
+                alert(e.message);
+            }
+
+            // Enable real-time tracking of user's location
+            map.locate({ watch: true, maxZoom: 16 });
+
+            // When a new location is found, update the marker and fetch data
+            map.on('locationfound', onLocationFound);
+
+            // Handle location errors
+            map.on('locationerror', onLocationError);
+
+            // Also fetch toilets on map move (for cases when user moves map manually)
+            map.on('moveend', function() {
+                const center = map.getCenter();
+                fetchToilets(center.lat, center.lng);
+            });
+        </script>
+    </body>
+</html>
