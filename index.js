@@ -5,25 +5,43 @@ const app = express();
 app.use(express.static('public'));
 
 app.get('/api/toilets', async (req, res) => {
-    const { lat, lon, radius } = req.query;
+    const { lat, lon, radius, wheelchair, free } = req.query;
 
     if (!lat || !lon || !radius) {
         return res.status(400).json({ error: 'Missing required query parameters: lat, lon, radius' });
     }
 
     try {
+        // Construct the Overpass API query
+        let query = `
+            [out:json][timeout:5];
+            node["amenity"="toilets"](around:${radius},${lat},${lon})
+        `;
+
+        // Add wheelchair filter to the Overpass query
+        if (wheelchair === 'true') {
+            query += '["wheelchair"="yes"]';
+        }
+
+        query += ';out body;';
+
         const response = await axios.get('https://overpass-api.de/api/interpreter', {
             params: {
-                data: `
-                [out:json][timeout:25];
-                node["amenity"="toilets"](around:${radius},${lat},${lon});
-                out body;
-                `
-            }
+                data: query,
+            },
         });
-        res.json(response.data);
+
+        // Filter results based on fee status
+        const filteredToilets = response.data.elements.filter((element) => {
+            const tags = element.tags || {};
+            if (free === 'true' && tags.fee === 'yes') {
+                return false; // Exclude toilets that have a fee
+            }
+            return true;
+        });
+
+        res.json({ elements: filteredToilets });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: 'Failed to fetch toilet data' });
     }
 });

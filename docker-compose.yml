@@ -1,0 +1,9 @@
+services:
+  server:
+    container_name: klofyi
+    image: registry.felixtech.io/klofyi/server:latest
+    ports:
+      - "80:3000"
+    logging:
+      driver: "json-file"
+    restart: always

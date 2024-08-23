@@ -1,0 +1,22 @@
+name: Build Deployment Docker Image
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: login to container registry
+      run: docker login -u ${{ secrets.DockerRegistryUsername }} -p ${{ secrets.DockerRegistryPassword }} ${{ secrets.DockerRegistry }}
+
+    - name: Build Docker Image
+      run: docker build --tag ${{ secrets.DockerRegistry }}/klofyi/server:latest .
+
+    - name: Push Docker Image
+      run: docker push ${{ secrets.DockerRegistry }}/klofyi/server:latest
+
+    - name: logout from container registry
+      run: docker logout ${{ secrets.DockerRegistry }}
