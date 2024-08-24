@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 
+app.disable("x-powered-by");
 app.use(express.static('public'));
 
 app.get('/api/toilets', async (req, res) => {
@@ -34,10 +35,7 @@ app.get('/api/toilets', async (req, res) => {
         // Filter results based on fee status
         const filteredToilets = response.data.elements.filter((element) => {
             const tags = element.tags || {};
-            if (free === 'true' && tags.fee === 'yes') {
-                return false; // Exclude toilets that have a fee
-            }
-            return true;
+            return !(free === 'true' && tags.fee === 'yes'); // Exclude toilets that have a fee
         });
 
         res.json({ elements: filteredToilets });
