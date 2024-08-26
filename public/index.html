@@ -4,9 +4,15 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Public Toilets Map</title>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
         <link rel="stylesheet" href="css/style.css" />
         <link rel="icon" href="images/favicon.svg" />
+
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.0/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+        <script src="https://code.jquery.com/ui/1.14.0/jquery-ui.js"></script>
     </head>
     <body>
         <div id="controls">
@@ -25,151 +31,23 @@
             </div>
             <button onclick="fetchAndUpdateToilets()">Apply<br />Filters</button>
         </div>
+
         <div id="map"></div>
+
         <button id="locateButton" onclick="centerOnUserLocation()">
             <img src="images/user-location-button.svg" alt="Locate Me" />
         </button>
-        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-        <script>
-            const map = L.map('map').setView([48.21, 16.38], 14); // Default Location Vienna
+        <button id="infoButton" onclick="openInfoDialog()">
+            <img src="images/info.svg" alt="Info" />
+        </button>
 
-            // Set up tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                minZoom: 11
-            }).addTo(map);
+        <div id="infoDialog" title="Info">
+            <p><b>klo.fyi<br />A map to find public toilets</b></p>
+            <p>This project is Open Source: <a href="https://github.com/felixtech-msp/KloFYI" target="_blank">GitHub</a></p>
+            <p>Made by <a href="https://www.felixtech.io/" target="_blank">FelixTECH MSP e.U.</a></p>
+            <p>If you have questions or problems, please open a GitHub Issue or e-mail us at support&#64;klo&#046;fyi</p>
+        </div>
 
-            // Fetch and display toilets based on filters
-            function fetchToilets(lat, lon) {
-                const radius = map.getBounds().getNorthEast().distanceTo(map.getBounds().getSouthWest()) / 2;
-                const wheelchair = document.getElementById('wheelchairFilter').checked;
-                const free = document.getElementById('freeFilter').checked;
-
-                const url = `/api/toilets?lat=${lat}&lon=${lon}&radius=${radius}&wheelchair=${wheelchair}&free=${free}`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Clear existing toilet markers, but keep the user location marker
-                        map.eachLayer(layer => {
-                            if (layer instanceof L.Marker && !layer._userMarker) {
-                                map.removeLayer(layer);
-                            }
-                        });
-
-                        data.elements.forEach(element => {
-                            if (element.lat && element.lon) {
-                                const toiletIcon = L.divIcon({
-                                    className: 'toilet-marker',
-                                });
-
-                                const popupContent = `
-                                    <div>
-                                        <strong>Public Toilet</strong><br />
-                                        ${element.tags.access ? `<strong>Opened:</strong> ${element.tags.access}<br />` : ''}
-                                        ${element.tags.centralkey ? `<strong>Central Key:</strong> ${element.tags.centralkey}<br />` : ''}
-                                        ${element.tags.fee ? `<strong>Fee:</strong> ${element.tags.fee}<br />` : ''}
-                                        ${element.tags.wheelchair ? `<strong>Wheelchair accessible:</strong> ${element.tags.wheelchair}<br />` : ''}
-                                        <strong>ID:</strong> #${element.id}
-                                    </div>
-                                `;
-
-                                L.marker([element.lat, element.lon], { icon: toiletIcon })
-                                    .addTo(map)
-                                    .bindPopup(popupContent);
-                            }
-                        });
-                    })
-                    .catch(error => console.error('Fetch error:', error));
-            }
-
-            let userLocation; // Store user location for later centering
-
-            // Wrapper function to get the center and fetch toilets
-            function fetchAndUpdateToilets() {
-                const center = map.getCenter();
-                fetchToilets(center.lat, center.lng);
-            }
-
-            // Center the map on the user's location when the button is clicked
-            function centerOnUserLocation() {
-                if (userLocation) {
-                    map.setView(userLocation, 15);
-                } else {
-                    alert("User location not available yet.");
-                }
-            }
-
-            let userMarker; // identifies the user location marker on the map
-            let mapCentered = false; // Flag to ensure the map is centered only once
-
-            function onLocationFound(e) {
-                const radius = e.accuracy / 2;
-
-                if (!userMarker) {
-                    // Create a custom marker if it doesn't exist
-                    const userIcon = L.divIcon({
-                        className: 'user-location-marker',
-                    });
-
-                    userMarker = L.marker(e.latlng, { icon: userIcon })
-                        .addTo(map)
-                        .bindPopup("You are within " + Math.trunc(radius) + " meters from this point.");
-
-                    // Mark this marker as the user location marker
-                    userMarker._userMarker = true;
-                } else {
-                    // Update the existing marker position
-                    userMarker.setLatLng(e.latlng).update();
-                }
-
-                userLocation = e.latlng;
-
-                // Center the map only on the first location update
-                if (!mapCentered) {
-                    map.setView(e.latlng, 15);
-                    mapCentered = true; // Ensure map is not centered again
-                }
-
-                // Fetch toilets around the new location
-                fetchToilets(e.latlng.lat, e.latlng.lng);
-            }
-
-            function onLocationError(e) {
-                alert(e.message);
-            }
-
-            let isTracking = true; // Status if the GPS tracker is enabled at the moment
-
-            function onVisibilityChange() {
-                if (document.hidden) {
-                    map.stopLocate(); // Stop tracking when the window is in the background
-                    isTracking = false;
-                } else if (!isTracking) {
-                    map.locate({ watch: true, maxZoom: 16 }); // Resume tracking when the window is in focus
-                    isTracking = true;
-                }
-            }
-
-            // Enable real-time tracking of user's location
-            map.locate({ watch: true, maxZoom: 16 });
-
-            // When a new location is found, update the marker and fetch data
-            map.on('locationfound', onLocationFound);
-
-            // Handle location errors
-            map.on('locationerror', onLocationError);
-
-            // Handles browser window visibility changes
-            document.addEventListener('visibilitychange', onVisibilityChange);
-
-            // Also fetch toilets on map move (for cases when user moves map manually)
-            map.on('moveend', function() {
-                fetchAndUpdateToilets();
-            });
-
-            // Initial fetch
-            fetchAndUpdateToilets();
-        </script>
+        <script src="js/main.js"></script>
     </body>
 </html>
