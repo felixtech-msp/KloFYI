@@ -16,10 +16,10 @@ jobs:
       run: docker login -u ${{ secrets.DockerRegistryUsername }} -p ${{ secrets.DockerRegistryPassword }} ${{ secrets.DockerRegistry }}
 
     - name: Build Docker Image
-      run: docker build --tag ${{ secrets.DockerRegistry }}/klofyi/server:latest .
+      run: docker build --tag ${{ secrets.DockerRegistry }}/felixtech/klofyi:latest .
 
     - name: Push Docker Image
-      run: docker push ${{ secrets.DockerRegistry }}/klofyi/server:latest
+      run: docker push ${{ secrets.DockerRegistry }}/felixtech/klofyi:latest
 
     - name: logout from container registry
       run: docker logout ${{ secrets.DockerRegistry }}
