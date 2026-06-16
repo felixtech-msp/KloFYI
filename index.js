@@ -30,6 +30,9 @@ app.get('/api/toilets', async (req, res) => {
             params: {
                 data: query,
             },
+            headers: {
+                'User-Agent': 'klo.fyi/1.1'
+            }
         });
 
         // Filter results based on fee status
@@ -40,6 +43,7 @@ app.get('/api/toilets', async (req, res) => {
 
         res.json({ elements: filteredToilets });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Failed to fetch toilet data' });
     }
 });

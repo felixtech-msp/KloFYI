@@ -1,6 +1,6 @@
 {
   "name": "klofyi",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "a map to find public toilets",
   "main": "index.js",
   "scripts": {
