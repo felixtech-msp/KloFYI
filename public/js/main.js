@@ -40,8 +40,7 @@ function fetchToilets(lat, lon) {
                             ${element.tags.access ? `<strong>Opened:</strong> ${element.tags.access}<br />` : ''}
                             ${element.tags.centralkey ? `<strong>Central Key:</strong> ${element.tags.centralkey}<br />` : ''}
                             ${element.tags.fee ? `<strong>Fee:</strong> ${element.tags.fee}<br />` : ''}
-                            ${element.tags.wheelchair ? `<strong>Wheelchair accessible:</strong> ${element.tags.wheelchair}<br />` : ''}
-                            <strong>ID:</strong> #${element.id}
+                            ${element.tags.wheelchair ? `<strong>Wheelchair accessible:</strong> ${element.tags.wheelchair}` : ''}
                         </div>
                     `;
 

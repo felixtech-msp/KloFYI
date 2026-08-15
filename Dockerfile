@@ -1,4 +1,4 @@
-FROM node:22
+FROM node:24
 RUN useradd -d /app -m -r -s /bin/bash -U klofyi
 USER klofyi:klofyi
 WORKDIR /app
